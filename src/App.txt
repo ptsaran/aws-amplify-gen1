@@ -1,0 +1,230 @@
+import React, { useEffect, useState } from 'react';
+// import { Amplify, API, Storage } from 'aws-amplify';
+import { uploadData, getUrl, remove } from 'aws-amplify/storage';
+import awsconfig from './aws-exports';
+// import { withAuthenticator, AmplifySignOut } from '@aws-amplify/ui-react';
+// import { withAuthenticator, AmplifySignOut } from '@aws-amplify/ui-react-v1';
+
+Amplify.configure(awsconfig);
+
+function App() {
+  const [employees, setEmployees] = useState([]);
+  const [newEmployee, setNewEmployee] = useState({
+    id: '',
+    name: '',
+    domain: '',
+    photo: '',
+    experience: '',
+    joinedDate: ''
+  });
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      const employeeList = await Storage.list('employees/');
+      const employeeDataPromises = employeeList.map(async (employee) => {
+        const data = await Storage.get(employee.key);
+        return fetch(data).then((res) => res.json());
+      });
+      const employeeData = await Promise.all(employeeDataPromises);
+      setEmployees(employeeData);
+    } catch (error) {
+      console.log('Error fetching employees:', error);
+    }
+  };
+
+  const addEmployee = async (e) => {
+    e.preventDefault();
+    try {
+      const { id, name, domain, photo, experience, joinedDate } = newEmployee;
+      const employeeData = { id, name, domain, photo, experience, joinedDate };
+      await API.post('apiName', `/employees/${id}`, { body: employeeData });
+      fetchEmployees();
+    } catch (error) {
+      console.log('Error adding employee:', error);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setNewEmployee({ ...newEmployee, [name]: value });
+  };
+
+  return (
+    <div className="App">
+      {/* <AmplifySignOut /> */}
+      <h1>Employee Directory</h1>
+      <form onSubmit={addEmployee}>
+        <input type="text" name="id" placeholder="ID" onChange={handleChange} required />
+        <input type="text" name="name" placeholder="Name" onChange={handleChange} required />
+        <input type="text" name="domain" placeholder="Domain" onChange={handleChange} required />
+        <input type="text" name="photo" placeholder="Photo URL" onChange={handleChange} required />
+        <input type="text" name="experience" placeholder="Experience" onChange={handleChange} required />
+        <input type="date" name="joinedDate" onChange={handleChange} required />
+        <button type="submit">Add Employee</button>
+      </form>
+      <div>
+        {employees.map((employee) => (
+          <div key={employee.id}>
+            <img src={employee.photo} alt={employee.name} width="100" />
+            <h2>{employee.name}</h2>
+            <p>{employee.domain}</p>
+            <p>{employee.experience} years of experience</p>
+            <p>Joined on: {employee.joinedDate}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// export default withAuthenticator(App);
+export default App;
+
+
+
+
+
+
+// import logo from './logo.svg';
+// import './App.css';
+
+// function App() {
+//   return (
+//     <div className="App">
+//       <header className="App-header">
+//         <img src={logo} className="App-logo" alt="logo" />
+//         <p>
+//           Edit <code>src/App.js</code> and save to reload.
+//         </p>
+//         <a
+//           className="App-link"
+//           href="https://reactjs.org"
+//           target="_blank"
+//           rel="noopener noreferrer"
+//         >
+//           Learn React
+//         </a>
+//       </header>
+//     </div>
+//   );
+// }
+
+// export default App;
+
+
+
+// import React, { useEffect, useState } from 'react';
+// import AWS from 'aws-sdk';
+// import './App.css';
+
+// const s3 = new AWS.S3({
+//   accessKeyId: 'AKIAYGEGJ25OABIXOGTE',
+//   secretAccessKey: '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',
+//   region: 'us-east-1',
+// });
+
+// const apiGatewayEndpoint = 'https://xpmngvc96l.execute-api.us-east-1.amazonaws.com/dev';
+
+// function App() {
+//   const [employees, setEmployees] = useState([]);
+//   const [newEmployee, setNewEmployee] = useState({
+//     id: '',
+//     name: '',
+//     domain: '',
+//     photo: '',
+//     experience: '',
+//     joinedDate: ''
+//   });
+
+//   useEffect(() => {
+//     fetchEmployees();
+//   }, []);
+
+//   const fetchEmployees = async () => {
+//     try {
+//       const params = {
+//         Bucket: 'amplifyemployees32b23a-dev',
+//         Prefix: 'employees/'
+//       };
+//       const employeeList = await s3.listObjectsV2(params).promise();
+//       const employeeDataPromises = employeeList.Contents.map(async (employee) => {
+//         const data = await s3.getObject({
+//           Bucket: 'amplifyemployees32b23a-dev',
+//           Key: employee.Key
+//         }).promise();
+//         return JSON.parse(data.Body.toString());
+//       });
+//       const employeeData = await Promise.all(employeeDataPromises);
+//       setEmployees(employeeData);
+//     } catch (error) {
+//       console.log('Error fetching employees:', error);
+//     }
+//   };
+
+//   const addEmployee = async (e) => {
+//     e.preventDefault();
+//     try {
+//       const { id, name, domain, photo, experience, joinedDate } = newEmployee;
+//       const employeeData = { id, name, domain, photo, experience, joinedDate };
+      
+//       // Save employee data to S3
+//       const params = {
+//         Bucket: 'amplifyemployees32b23a-dev',
+//         Key: `employees/${id}.json`,
+//         Body: JSON.stringify(employeeData),
+//         ContentType: 'application/json'
+//       };
+//       await s3.putObject(params).promise();
+
+//       // Optionally call API Gateway endpoint if additional processing is needed
+//       await fetch(`${apiGatewayEndpoint}/employees/${id}`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(employeeData)
+//       });
+
+//       fetchEmployees();
+//     } catch (error) {
+//       console.log('Error adding employee:', error);
+//     }
+//   };
+
+//   const handleChange = (e) => {
+//     const { name, value } = e.target;
+//     setNewEmployee({ ...newEmployee, [name]: value });
+//   };
+
+//   console.log(employees);
+
+//   return (
+//     <div className="App">
+//       <h1>Employee Directory</h1>
+//       <form onSubmit={addEmployee}>
+//         <input type="text" name="id" placeholder="ID" onChange={handleChange} required />
+//         <input type="text" name="name" placeholder="Name" onChange={handleChange} required />
+//         <input type="text" name="domain" placeholder="Domain" onChange={handleChange} required />
+//         <input type="text" name="photo" placeholder="Photo URL" onChange={handleChange} required />
+//         <input type="text" name="experience" placeholder="Experience" onChange={handleChange} required />
+//         <input type="date" name="joinedDate" onChange={handleChange} required />
+//         <button type="submit">Add Employee</button>
+//       </form>
+//       <div>
+//         {employees.map((employee) => (
+//           <div key={employee.id}>
+//             <img src={employee.photo} alt={employee.name} width="100" />
+//             <h2>{employee.name}</h2>
+//             <p>{employee.domain}</p>
+//             <p>{employee.experience} years of experience</p>
+//             <p>Joined on: {employee.joinedDate}</p>
+//           </div>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// }
+
+// export default App;
