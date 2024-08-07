@@ -22,10 +22,9 @@ function App() {
 
       console.log(e);
 
-      const result = await uploadData({
+      uploadData({
         path: `uploads/${file.name}`,
         data: file,
-        
       });
 
       alert('File uploaded successfully!');
@@ -50,6 +49,7 @@ function App() {
 
           <button type="submit">Upload</button>
         </form>
+        <br/>
         <button onClick={signOut} >Sign Out</button>
       </main>
       )}
